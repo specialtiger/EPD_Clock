@@ -1,0 +1,365 @@
+
+body {
+  background-color: rgb(252, 252, 252);
+  -webkit-font-smoothing:subpixel-antialiased;
+  -moz-osx-font-smoothing:auto;
+}
+
+.title {
+   margin-top: 2%;
+   text-align: center;
+   font-size: 2em;
+
+ }
+
+ .drawdispContainer {
+   margin-top: 1%;
+   margin-bottom: 50px;
+   display: flex;
+   justify-content: center;
+   text-align: center;
+   height: 25%;
+
+ }
+
+ .drawdisp {
+   text-align: center;
+   background-color: rgb(58, 58, 58);
+   margin-top: 1%;
+   margin-left: auto;
+   margin-right: auto;
+   width: 400px;
+   height: 180px;
+   border-top: 10px solid rgb(15, 15, 15);
+   border-bottom: 10px solid rgba(112, 112, 112, 1);
+   border-top-left-radius: 10px;
+   border-top-right-radius: 10px;
+   border-bottom-left-radius: 10px;
+   border-bottom-right-radius: 10px;
+ }
+ .drawink {
+  text-align: center;
+  background-color: rgb(201, 201, 201);
+  margin-top: -25px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 280px;
+  height: 149px;
+  border-top: 15px solid rgba(112, 112, 112, 1);
+  border-bottom: 15px solid rgb(15, 15, 15);
+  border-left: 15px solid rgba(112, 112, 112, 1);
+  border-right: 15px solid rgb(15, 15, 15);
+
+}
+ .ESL_led {
+   background-color: var(--LEDcolor,rgba(255, 255, 255, 0.651));
+   margin-top: 12px;
+   margin-left: 370px;
+   width: 30px;
+   height: 0px;
+   border-top: 7px solid rgba(255, 255, 255, 0.651);
+   border-bottom: 7px solid rgba(255, 255, 255, 0.651);
+   border-top-left-radius: 6px;
+   border-bottom-left-radius: 6px;
+ }
+
+  .ESL1 {
+   text-align: center;
+   background-color: rgb(241, 241, 241);
+   margin-top: 20px;
+   margin-left: auto;
+   margin-right: auto;
+   width: 290px;
+   height: 139px;
+   border: 3px solid rgb(177, 221, 241);
+   border-top-left-radius: 10px;
+   border-top-right-radius: 10px;
+   border-bottom-left-radius: 10px;
+   border-bottom-right-radius: 10px;
+ }
+  .led {
+	background-color: var(--LEDcolor,rgba(255, 255, 255, 0.651));
+	margin-top: 12px;
+	margin-left: 264px;
+	width: 15px;
+	height: 15px;
+	border: 1px solid rgb(145, 145, 145);
+  }
+
+  .ESL2 {
+	text-align: center;
+	background-color: rgba(218, 218, 218, 0.452);
+	margin-top: -17px;
+	margin-left: auto;
+	margin-right: auto;
+	width: 212px;
+	height: 104px;
+	border: 6px solid rgb(163, 163, 163);
+  }
+  .log {
+	font-family: "黑体", "Microsoft YaHei", "微软雅黑", SimSun, "宋体", sans-serif;
+	text-align: center;
+	font-size: 1.45vh;
+  }
+ .logline {
+   background-color: #FFFFFF;
+   width: auto;
+   height: 90px;
+   margin-left: auto;
+   margin-right: auto;
+   border-style: solid;
+   border-width: 5px;
+   border-color: gray;
+   overflow: hidden;
+ }
+
+ .btn {
+   text-align: center;
+   margin-top: 5%;
+   padding-left: 2%;
+   padding-right: 2%;
+
+ }
+ .ledbtn {
+	border:none;
+	  position: relative;
+	  display: inline-block;
+	  font-size: 23px;
+	  width: 38px;
+		height: 38px;
+	  padding: 1px 1px;
+	  color: white;
+	  margin: 5px 5px 5px;
+	  border-radius: 50%;
+	  text-align: center;
+	  transition: top .01s linear;
+	  text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+  }
+  .ledbtn.red:hover    {background-color: #e74c3c;}
+  .ledbtn.blue:hover   {background-color: #699DD1;}
+  .ledbtn.green:hover  {background-color: #80C49D;}
+  .ledbtn.pink:hover {background-color: #D19ECB;}
+  .ledbtn.yellow:hover {background-color: #F0D264;}
+  .ledbtn.cyan:hover   {background-color: #82D1E3;}
+  .ledbtn.white:hover   {background-color: #ececec;}
+  .ledbtn.off:hover   {background-color: #222222;}
+  .ledbtn:active {
+	top: 3px;
+}
+.ledbtn.red {
+	background-color: #e74c3c;
+	box-shadow: 0 0 0 1px #c63702 inset,
+        		0 0 0 2px rgba(255,255,255,0.15) inset,
+        		0 2px 0 0 #C24032,
+        		0 2px 0 1px rgba(0,0,0,0.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.red:active {
+	--LEDcolor: #c63702;
+	box-shadow: 0 0 0 1px #c63702 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+.ledbtn.blue {
+	background-color: #6DA2D9;
+	box-shadow: 0 0 0 1px #6698cb inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(110, 164, 219, .7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.blue:active {
+	box-shadow: 0 0 0 1px #6191C2 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.ledbtn.green {
+	background-color: #82c8a0;
+	box-shadow: 0 0 0 1px #82c8a0 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(126, 194, 155, .7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.green:active {
+	box-shadow: 0 0 0 1px #82c8a0 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.ledbtn.pink {
+	background-color: #cb99c5;
+	box-shadow: 0 0 0 1px #cb99c5 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(189, 142, 183, .7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.pink:active {
+	box-shadow: 0 0 0 1px #cb99c5 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.ledbtn.cyan {
+	background-color: #7fccde;
+	box-shadow: 0 0 0 1px #7fccde inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(102, 164, 178, .6),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.cyan:active {
+	box-shadow: 0 0 0 1px #7fccde inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.ledbtn.yellow {
+	background-color: #F0D264;
+	box-shadow: 0 0 0 1px #F0D264 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(196, 172, 83, .7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.yellow:active {
+	box-shadow: 0 0 0 1px #F0D264 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+.ledbtn.white{
+	background-color: #ececec;
+	box-shadow: 0 0 0 1px #ececec inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(255, 255, 255, 0.7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.white:active {
+	box-shadow: 0 0 0 1px #ececec inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+.ledbtn.off {
+	background-color: #000000;
+	box-shadow: 0 0 0 1px #000000 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 2px 0 0 rgba(0, 0, 0, 0.7),
+				0 2px 0 1px rgba(0,0,0,.4),
+				0 2px 2px 1px rgba(0,0,0,0.5);
+}
+.ledbtn.off:active {
+	box-shadow: 0 0 0 1px #000000 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+ .btn-3d {
+  border:none;
+	position: relative;
+	display: inline-block;
+	font-size: 20px;
+	padding: 20px 40px;
+	color: white;
+	margin: 10px 5px 5px;
+	border-radius: 8px;
+	text-align: center;
+	transition: top .01s linear;
+	text-shadow: 0 1px 0 rgba(0,0,0,0.15);
+}
+.btn-3d.red:hover    {background-color: #e74c3c;}
+.btn-3d.blue:hover   {background-color: #699DD1;}
+.btn-3d.green:hover  {background-color: #80C49D;}
+.btn-3d.purple:hover {background-color: #D19ECB;}
+.btn-3d.yellow:hover {background-color: #F0D264;}
+.btn-3d.cyan:hover   {background-color: #82D1E3;}
+
+.btn-3d:active {
+	top: 9px;
+}
+
+/* 3D button colors */
+.btn-3d.red {
+	background-color: #e74c3c;
+	box-shadow: 0 0 0 1px #c63702 inset,
+        0 0 0 2px rgba(255,255,255,0.15) inset,
+        0 8px 0 0 #C24032,
+        0 8px 0 1px rgba(0,0,0,0.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.red:active {
+	box-shadow: 0 0 0 1px #c63702 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.btn-3d.blue {
+	background-color: #6DA2D9;
+	box-shadow: 0 0 0 1px #6698cb inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 8px 0 0 rgba(110, 164, 219, .7),
+				0 8px 0 1px rgba(0,0,0,.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.blue:active {
+	box-shadow: 0 0 0 1px #6191C2 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.btn-3d.green {
+	background-color: #82c8a0;
+	box-shadow: 0 0 0 1px #82c8a0 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 8px 0 0 rgba(126, 194, 155, .7),
+				0 8px 0 1px rgba(0,0,0,.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.green:active {
+	box-shadow: 0 0 0 1px #82c8a0 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.btn-3d.purple {
+	background-color: #cb99c5;
+	box-shadow: 0 0 0 1px #cb99c5 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 8px 0 0 rgba(189, 142, 183, .7),
+				0 8px 0 1px rgba(0,0,0,.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.purple:active {
+	box-shadow: 0 0 0 1px #cb99c5 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.btn-3d.cyan {
+	background-color: #7fccde;
+	box-shadow: 0 0 0 1px #7fccde inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 8px 0 0 rgba(102, 164, 178, .6),
+				0 8px 0 1px rgba(0,0,0,.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.cyan:active {
+	box-shadow: 0 0 0 1px #7fccde inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.btn-3d.yellow {
+	background-color: #F0D264;
+	box-shadow: 0 0 0 1px #F0D264 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 8px 0 0 rgba(196, 172, 83, .7),
+				0 8px 0 1px rgba(0,0,0,.4),
+				0 8px 8px 1px rgba(0,0,0,0.5);
+}
+.btn-3d.yellow:active {
+	box-shadow: 0 0 0 1px #F0D264 inset,
+				0 0 0 2px rgba(255,255,255,0.15) inset,
+				0 0 0 1px rgba(0,0,0,0.4);
+}
