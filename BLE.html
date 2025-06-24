@@ -1,0 +1,622 @@
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximu-scale=1.0 ,user-scalable=no"><title>蓝牙对时页</title>
+	<link rel="stylesheet" href="css/blestyle.css">
+  <script type="application/javascript" src="js/dithering.js"></script>
+
+</head>
+
+<body data-new-gr-c-s-check-loaded="14.1026.0" data-gr-ext-installed="">
+  <script>
+    let LEDbtn_show = 0;
+    let EPDbtn_show = 0;
+    let PICbtn_show = 0;
+    let FULL_ON = 1;
+    let bleDevice;
+    let gattServer;
+    let Theservice;
+    let ServiceMain;
+    let settingsCharacteristics;
+    let writeCharacteristic;
+    let busy = false;
+    let imgArray;
+    let imgArrayLen = 0;
+    let uploadPart = 0;
+    let startTime = 0;
+    let reconnectTrys = 0;
+/*
+    function showdate() {
+      var now = new Date();
+      var year = now.getFullYear();
+      var month = now.getMonth();
+      var day = now.getDate();
+      var cndays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      var d = new Date(Date.now()).toLocaleDateString();
+      var week = now.getDay();
+      document.getElementById("yyyy").innerHTML = year;
+      document.getElementById("mm").innerHTML = month;
+      document.getElementById("dd").innerHTML = day;
+      document.getElementById("cnw").innerHTML = cndays[week];
+      document.getElementById("enw").innerHTML = days[week];
+    }
+    setInterval(showdate,1000);
+*/
+    function delay(delayInms) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(2);
+        }, delayInms);
+      });
+    }
+
+    function resetVariables() {
+      busy = false;
+      gattServer = null;
+      Theservice = null;
+      writeCharacteristic = null;
+      document.getElementById("log").value = '';
+    }
+
+    function decimalToHex(d, padding) {
+      var hex = Number(d).toString(16);
+      padding = typeof (padding) === "undefined" || padding === null ? padding = 2 : padding;
+
+      while (hex.length < padding) {
+        hex = "0" + hex;
+      }
+
+      return hex;
+    }
+
+    function handleError(error) {
+      console.log(error);
+      resetVariables();
+      if (bleDevice == null)
+        return;
+      if (reconnectTrys <= 5) {
+        reconnectTrys++;
+        connect();
+      }
+      else {
+        addLog("连接失败");
+        reconnectTrys = 0;
+      }
+    }
+
+    async function sendCommand(cmd) {
+      if (writeCharacteristic) {
+        await writeCharacteristic.writeValue(cmd);
+      }
+    }
+
+    async function rxTxSendCommand(cmd) {
+      if (settingsCharacteristics) {
+        await settingsCharacteristics.writeValue(cmd);
+      }
+    }
+
+
+    function disconnect() {
+      resetVariables();
+      console.log('Disconnected.');
+      addLog('断开连接');
+      document.getElementById("connectbutton").innerHTML = '连接';
+    }
+
+    function handleNotify(data) {
+      addLog("Got bytes: " + bytesToHex(data.buffer));
+    }
+    function handlerxtxNotify (data) {
+      let bat_type = "未知" ;
+      switch(bytesToHex(data.buffer)[7]){
+        case '1':bat_type = "原装一次性锂电池"; break;
+        case '2':bat_type = "充电电池"; break;
+        case '3':bat_type = "太阳能电池"; break;
+        default: bat_type = "未知" ;
+      }
+      addLog("对时成功！<br>固件版本:V" + bytesToHex(data.buffer)[1]+"."+ bytesToHex(data.buffer)[3]+"."+ bytesToHex(data.buffer)[5]+ '<br>'+"电池类型："+ bat_type + '<br>'+"电量："+hexToBytes(bytesToHex(data.buffer)[8]+bytesToHex(data.buffer)[9])+ '%'+'<br>'+"电池电压："+parseInt(bytesToHex(data.buffer).slice(10),16)+"mV");
+    }
+    function preConnect(name_filter) {
+      if (gattServer != null && gattServer.connected) {
+        if (bleDevice != null && bleDevice.gatt.connected)
+          bleDevice.gatt.disconnect();
+      }
+      else {
+        connectTrys = 0;
+        navigator.bluetooth.requestDevice({ 
+          filters:[{namePrefix:name_filter}],
+          optionalServices: ['0000221f-0000-1000-8000-00805f9b34fb', '00001f10-0000-1000-8000-00805f9b34fb', '13187b10-eba9-a3ba-044e-83d3217d9a38'] }).then(device => {
+          device.addEventListener('gattserverdisconnected', disconnect);
+          bleDevice = device;
+          connect();
+        }).catch(handleError);
+      }
+    }
+
+    function reConnect() {
+      connectTrys = 0;
+      if (bleDevice != null && bleDevice.gatt.connected)
+        bleDevice.gatt.disconnect();
+      resetVariables();
+      addLog("重新连接");
+      setTimeout(function () { connect(); }, 300);
+    }
+
+    function connect() {
+      if (writeCharacteristic == null) {
+        addLog("正在连接: " + bleDevice.name);
+        bleDevice.gatt.connect().then(server => {
+          console.log('> Found GATT server');
+          gattServer = server;
+          return gattServer.getPrimaryService('0000221f-0000-1000-8000-00805f9b34fb');
+        })
+          .then(service => {
+            console.log('> Found service');
+            Theservice = service;
+            return Theservice.getCharacteristic('0000331f-0000-1000-8000-00805f9b34fb');
+          })
+          .then(characteristic => {
+            console.log('> Found write characteristic');
+            addLog('找到电子日历');
+            document.getElementById("connectbutton").innerHTML = '断开';
+            writeCharacteristic = characteristic;
+            return writeCharacteristic.startNotifications().then(() => {
+              writeCharacteristic.addEventListener('characteristicvaluechanged', event => {
+                var value = event.target.value;
+                handleNotify(value);
+              });
+              connect_to_rxtx();
+            });
+          })
+          .catch(handleError);
+      }
+    }
+
+    function connect_to_rxtx() {
+      gattServer.getPrimaryServices().then(services => {
+        for (var i = 0; i < services.length; i++) {
+          console.log("Services: " + services[i].uuid);
+          if (services[i].uuid == "00001f10-0000-1000-8000-00805f9b34fb") {
+            gattServer.getPrimaryService('00001f10-0000-1000-8000-00805f9b34fb')
+              .then(service => {
+                addLog("正在连接...");
+                ServiceMain = service;
+                return ServiceMain.getCharacteristic('00001f1f-0000-1000-8000-00805f9b34fb');
+              }).then(characteristic => {
+                addLog("日历已连接，可进行对时");
+                settingsCharacteristics = characteristic;
+                return settingsCharacteristics.startNotifications().then(() => {
+                  settingsCharacteristics.addEventListener('characteristicvaluechanged', event => {
+                    var value = event.target.value;
+                    handlerxtxNotify(value);
+                  });
+                });
+              }).catch();
+            return;
+          }
+        }
+      }).catch();
+    }
+    function setLED(colour) {
+      rxTxSendCommand(hexToBytes("05"+byteToHex(colour)));
+      switch(colour)
+      {
+        case 1:
+        document.getElementById("led").style.backgroundColor ='red';
+        break;
+        case 2:
+        document.getElementById("led").style.backgroundColor ='green';
+        break;
+        case 3:
+        document.getElementById("led").style.backgroundColor ='navy';
+        break;
+        case 4:
+        document.getElementById("led").style.backgroundColor ='deeppink';
+        break;
+        case 5:
+        document.getElementById("led").style.backgroundColor ='yellow';
+        break;
+        case 6:
+        document.getElementById("led").style.backgroundColor ='cyan';
+        break;
+        case 7:
+        document.getElementById("led").style.backgroundColor ='white';
+        break;
+        default:
+        document.getElementById("led").style.backgroundColor ='rgba(255, 255, 255, 0.651)';
+
+      }
+    }
+    function set_showMAC() {
+      rxTxSendCommand(hexToBytes("0401"));
+      addLog("切换MAC地址/温度");
+    }
+    function set_Display_mode(i){
+      rxTxSendCommand(hexToBytes("E1"+byteToHex(i)));
+      addLog("切换显示模式");
+    }
+    function force_flash() {
+      rxTxSendCommand(hexToBytes("E2"));
+      addLog("刷新屏幕");
+    }
+    function set_1224() {
+      rxTxSendCommand(hexToBytes("0402"));
+      addLog("切换12H/24H");
+    }
+    function set_FULL() {
+      if(FULL_ON){
+        rxTxSendCommand(hexToBytes("FC01"));
+        addLog("强制全局刷新");
+        FULL_ON = 0;
+    }
+      else{
+        rxTxSendCommand(hexToBytes("FC00"));
+        addLog("取消强制全局刷新");
+        FULL_ON = 1;
+    }
+    }
+    function sendForceEpd(nr)
+	{
+    if(nr==0){
+      addLog("屏幕型号 : E0" + byteToHex(nr+2));
+      rxTxSendCommand(hexToBytes("E0" + byteToHex(nr+2)));}
+    else{
+      addLog("屏幕型号 : E0" + byteToHex(nr+3));
+      rxTxSendCommand(hexToBytes("E0" + byteToHex(nr+3)));
+    }
+	}
+    function set_reboot() {
+      rxTxSendCommand(hexToBytes("06"));
+      addLog("重启时钟");
+    }
+    function set_bat_tye(i) {
+      rxTxSendCommand(hexToBytes("0403"+byteToHex(i)));
+      if(i==1){addLog("设置为原装电池");}
+      else if(i==2){addLog("设置为充电电池");}
+      else {addLog("设置为太阳能电池");}
+    }
+    async function setTime() {
+      let unixNow = Math.round(Date.now() / 1000)+(60*60*8);
+	  var d = new Date(Date.now()).toLocaleDateString()
+	  var s = new Date(Date.now()).toLocaleTimeString()
+      addLog("对时 : " + d +"  "+ s );
+      rxTxSendCommand(hexToBytes("dd" + intToHex4(unixNow)));
+      //await delay(700);
+      //await force_flash();
+    }
+
+
+    function setStatus(statusText) {
+      document.getElementById("status").innerHTML = statusText;
+    }
+    function show_hide_ESL(i)
+    {
+      var t = document.getElementById('nowa-266');
+      var u = document.getElementById('MFN');
+      var v = document.getElementById('ctlbtn');
+
+      var w = document.getElementById('LEDcontrol');
+      var x = document.getElementById('PICcontrol');
+      var y = document.getElementById('EPDcontrol');
+      if(i==1){
+      t.style.display = 'block';u.style.display = 'none';v.style.display = 'none';w.style.display = 'none';x.style.display = 'none';y.style.display = 'none';
+      }
+      else if(i==0){
+      t.style.display = 'none';u.style.display = 'block';v.style.display = 'block';
+      }
+    }
+    function show_hide_btn(i)
+    {
+      var t = document.getElementById('LEDcontrol');
+      var u = document.getElementById('PICcontrol');
+      var v = document.getElementById('EPDcontrol');
+      if(i==1){
+      if(LEDbtn_show){t.style.display = 'none';u.style.display = 'none';v.style.display = 'none';}
+      else{t.style.display = 'block';u.style.display = 'none';v.style.display = 'none';}
+      LEDbtn_show=!LEDbtn_show;}
+
+      else if(i==2){
+      if(PICbtn_show){t.style.display = 'none';u.style.display = 'none';v.style.display = 'none';}
+      else{u.style.display = 'block';t.style.display = 'none';v.style.display = 'none';}
+      PICbtn_show=!PICbtn_show;}
+
+      else {
+      if(EPDbtn_show){t.style.display = 'none';u.style.display = 'none';v.style.display = 'none';}
+      else{v.style.display = 'block';t.style.display = 'none';u.style.display = 'none';}
+      EPDbtn_show=!EPDbtn_show;}
+    }
+    function set_fixsec_add(fixsec_add) {
+      addLog("走时修正 : 每" + fixsec_add+"秒减一秒");
+      rxTxSendCommand(intToBytes("02"+intToHex4(fixsec_add)));
+      //addLog(intToBytes("02"+intToHex4(fixsec_add)));
+      //addLog("02"+intToHex4(fixsec_add));
+    }	
+    function set_fixsec_sub(fixsec_sub) {
+      addLog("走时修正 : 每" + fixsec_sub+"秒加一秒");
+      rxTxSendCommand(intToBytes("03"+intToHex4(fixsec_sub)));
+    }	
+    function addLog(logTXT) {
+      document.getElementById("log").innerHTML += logTXT + '<br>';
+      document.getElementById("log2").innerHTML += logTXT + '<br>';
+      console.log(logTXT);
+      while ((document.getElementById("log").innerHTML.match(/<br>/g) || []).length > 6) {
+        var logs_br_position = document.getElementById("log").innerHTML.search("<br>");
+        document.getElementById("log").innerHTML = document.getElementById("log").innerHTML.substring(logs_br_position + 4);
+      }
+      while ((document.getElementById("log2").innerHTML.match(/<br>/g) || []).length > 7) {
+        var logs_br_position = document.getElementById("log2").innerHTML.search("<br>");
+        document.getElementById("log2").innerHTML = document.getElementById("log2").innerHTML.substring(logs_br_position + 4);
+      }
+    }
+
+    function hexToBytes(hex) {
+      for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+      return new Uint8Array(bytes);
+    }
+    function intToBytes(hex) {
+      for (var bytes = [], c = 0; c < hex.length; c += 2)
+        bytes.push(parseInt(hex.substr(c, 2), 10));
+      return new Uint8Array(bytes);
+    }
+
+    function bytesToHex(data) {
+      return new Uint8Array(data).reduce(function (memo, i) {
+        return memo + ("0" + i.toString(16)).slice(-2);
+      }, "");
+    }
+
+    function byteToHex(intIn) {
+      var stringOut = "";
+      stringOut = ("0" + intIn.toString(16)).substr(-2)
+      return stringOut;
+    }
+
+    function intToHex(intIn) {
+      var stringOut = "";
+      stringOut = ("0000" + intIn.toString(16)).substr(-4)
+      return stringOut.substring(2, 4) + stringOut.substring(0, 2);
+    }
+
+    function intToHex4(intIn) {
+      var stringOut = "";
+      stringOut = ("00000000" + intIn.toString(16)).substr(-8)
+      return stringOut;
+    }
+    		function sendimg(cmdIMG) {
+			startTime = new Date().getTime();
+			imgArray = cmdIMG.replace(/(?:\r\n|\r|\n|,|0x| )/g, '');
+			imgArrayLen = imgArray.length;
+			uploadPart = 0;
+			console.log('Sending image ' + imgArrayLen);
+			sendCommand(hexToBytes("0000")).then(() => {
+				sendCommand(hexToBytes("020000")).then(() => {
+					sendIMGpart();
+				})
+			})
+				.catch(handleError);
+		}
+
+		function sendIMGpart() {
+			if (imgArray.length > 0) {
+				let currentpart = "03" + imgArray.substring(0, 480);
+				imgArray = imgArray.substring(480);
+				setStatus('Current part: ' + uploadPart++ + " Time: " + (new Date().getTime() - startTime) / 1000.0 + "s");
+				console.log('Curr Part: ' + currentpart);
+				sendCommand(hexToBytes(currentpart)).then(() => {
+					sendIMGpart();
+				})
+			} else {
+				console.log('Last Part: ' + imgArray);
+				sendCommand(hexToBytes("01")).then(() => {
+					console.log("Update was send Time: " + (new Date().getTime() - startTime) / 1000.0 + "s");
+					setStatus("Update was send in: " + (new Date().getTime() - startTime) / 1000.0 + "s");
+				})
+			}
+		}
+    async function sendBufferData(value, type) {
+			addLog(`开始发送图片模式:${type}, 大小 ${value.length/2/1024}KB`);
+			let code = 'ff';
+			if (type === 'bwr') {
+				code = '00';
+			}
+			const step = 480;
+			let partIndex = 0;
+			for (let i = 0; i < value.length; i += step) {
+				addLog(`正在发送第${partIndex+1}块. 块大小: ${step/2 + 4}byte. 起始位置: ${i/2}`);
+				await sendCommand(hexToBytes("03" + code + intToHex(i / 2, 2) + value.substring(i, i + step)));
+				partIndex += 1;
+			}
+		}
+
+
+		async function upload_image() {
+			const canvas = document.getElementById('canvas');
+
+
+			const startTime = new Date().getTime();
+
+
+			await sendCommand(hexToBytes("0000"));
+
+			await sendCommand(hexToBytes("020000"));
+
+			await sendimg(bytesToHex(canvas2bytes(canvas)))
+
+			await sendCommand(hexToBytes("0101"))
+
+			addLog(`刷新完成，耗时${(new Date().getTime() - startTime)/1000}s`);
+		}
+
+		async function upload_epd_buffer() {
+			const startTime = new Date().getTime();
+			const value = document.getElementById('buffer').value.replace(/(?:\r\n|\r|\n|,|0x| )/g, '');
+
+			addLog(`开始刷新屏幕内存, 大小 ${value.length/1024}KB`);
+
+			await sendCommand(hexToBytes("0000"));
+
+			await sendCommand(hexToBytes("020000"));
+
+			await sendBufferData(value, 'bw');
+
+			await delay(150);
+
+			await sendCommand(hexToBytes("0101"));
+
+			addLog(`刷新完成，耗时${(new Date().getTime() - startTime)/1000}s`);
+		}
+		function get_position(canvas, x, y){
+			let rect = canvas.getBoundingClientRect()
+			return {
+				x: x - rect.left * (canvas.width/rect.width),
+				y: y - rect.top * (canvas.height/rect.height)
+			}
+		}
+		async function update_image () {
+			const image_file = document.getElementById('image_file');
+			if (image_file.files.length > 0) {
+				const file = image_file.files[0];
+
+				const canvas = document.getElementById("canvas");
+				const ctx = canvas.getContext("2d");
+
+				const image = new Image();
+				image.src = URL.createObjectURL(file);
+				image.onload = function(event) {
+					URL.revokeObjectURL(this.src);
+					ctx.drawImage(image, 0, 0, image.width, image.height, 0, 0, canvas.width, canvas.height);
+					convert_dithering()
+				}
+			}
+		}
+		function clear_canvas() {
+				const canvas = document.getElementById('canvas');
+				const ctx = canvas.getContext("2d");
+				ctx.fillStyle = 'white';
+				ctx.fillRect(0, 0, canvas.width, canvas.height);
+		}
+
+		function convert_dithering() {
+			const canvas = document.getElementById('canvas');
+			const ctx = canvas.getContext("2d");
+			const mode = document.getElementById('dithering').value;
+			if (mode.startsWith('bwr')) {
+				ditheringCanvasByPalette(canvas, bwrPalette, mode);
+			} else {
+				dithering(ctx, canvas.width, canvas.height, parseInt(document.getElementById('threshold').value), mode);
+			}
+		}
+
+  </script>
+
+
+  <div class="title">
+  欢迎使用电子日历</div><br><br>
+  <div style="text-align:center;"> <a href="https://web.zmp.hk/ota.html" target="_blank">OTA升级</a></div>
+  <div class="btn">
+    <button class="button" type="button" onclick="show_hide_ESL(1);">日历</button>
+    <button class="button" type="button" onclick="show_hide_ESL(0);">时钟</button>
+  </div>  
+  <div class="drawdispContainer" id="nowa-266" style='display:none'>
+    <div class="drawdisp">
+      <div class="ESL_led" ></div>
+      <div class="drawink">
+        <!--<div class="ynmnum" id="mm"></div>
+        <div class="ynmnum">月</div>
+        <div class="ynmnum" id="yyyy"></div>
+        <div class="ynmnum">年</div>
+        <div class="dnum" id="dd"></div>
+        <div class="dnum">日</div>
+        <div class="cnweek" id="cnw"></div>
+        <div class="enweek" id="enw"></div>-->
+        <div  id="log" style="font-size:1.1em"></div>
+      </div>
+    </div>
+  </div>
+  <div  id="MFN" >
+  <div class="ESL1" >
+    <div class="led" id="led"></div>
+    <div class= "ESL2" ><div class="log" id="log2"></div>
+    <!--<canvas id="canvas" class="ESL2"></canvas>-->
+    </div>
+  </div>
+    <div id="LEDcontrol" class= "btn" style='display:none'>
+      <button class="ledbtn red" type="button" onclick="setLED(1);">红</button>
+      <button class="ledbtn green" type="button" onclick="setLED(2);">绿</button>
+      <button class="ledbtn blue" type="button" onclick="setLED(3);">蓝</button>
+      <button class="ledbtn pink" type="button" onclick="setLED(4);">粉</button>
+      <button class="ledbtn yellow" type="button" onclick="setLED(5);">黄</button>
+      <button class="ledbtn cyan" type="button" onclick="setLED(6);">青</button>
+      <button class="ledbtn white" type="button" onclick="setLED(7);">白</button>
+      <button class="ledbtn off" type="button" onclick="setLED(0);">关</button>
+    </div>
+    <div id="EPDcontrol" class= "btn" style='display:none'>
+      <button type="button" onclick="set_Display_mode(2);">时钟模式</button>
+      <button type="button" onclick="set_Display_mode(1);">日历模式</button>
+      <button type="button" onclick="set_Display_mode(0);">图片模式</button><br><br>
+      <button type="button" onclick="set_showMAC();">温度/MAC</button>
+      <button type="button" onclick="set_1224();">12H/24H</button>
+      <button type="button" onclick="set_FULL();">全局刷新</button>
+      <button type="button" onclick="force_flash();">刷新屏幕</button>
+      <button type="button" onclick="set_reboot();">重启时钟</button><br><br>
+      <select name="bat_type" id="bat_type">
+        <option value="1">原装电池</option>
+        <option value="2">充电电池</option>
+        <option value="3">太阳能电池</option>
+      </select>
+      <button type="button" onclick="set_bat_tye(document.getElementById(&quot;bat_type&quot;).value);">电池类型强制设置</button><br> <br>
+      <select id="forceEPDselection">
+        <option>E31A_901045</option>
+        <option>E31A_001013</option>
+      </select>
+        <button type="button" onclick="sendForceEpd(document.getElementById(&quot;forceEPDselection&quot;).selectedIndex);">屏幕型号</button><br><br>
+      走时手动修正：<br>时钟走快了：每
+  <input type="number" id="fixsec_add" value= 0 min=0 max=30000> 秒调慢一秒： 
+ <button type="button" onclick="set_fixsec_add(document.getElementById(&quot;fixsec_add&quot;).value);">设置</button><br>
+  时钟走慢了：每
+  <input type="number" id="fixsec_sub" value= 0 min=0 max=30000> 秒调快一秒： 
+ <button type="button" onclick="set_fixsec_sub(document.getElementById(&quot;fixsec_sub&quot;).value);">设置</button><br>
+    </div>
+    <div id="PICcontrol" class= "btn" style='display:none'>
+      <div style="text-align:center;"> <a href="https://web.zmp.hk/PIC.html" target="_blank">可先使用图传功能页</a></div>
+      <!--<input type="file" id="image_file" onchange="update_image()" accept=".png,.jpg,.bmp,.webp"><br>
+      抖动算法：
+      <select id="dithering" title="抖动算法">
+          <option value="none" selected="selected">二值化</option>
+          <option value="bayer">bayer</option>
+          <option value="floydsteinberg">floydsteinberg</option>
+          <option value="Atkinson">Atkinson</option>
+      </select><br>
+      阈值:
+      <input type="number" max="255" min="0" value="125" id="threshold">
+      <button onclick="update_image()">重新加载</button>
+      <br>
+    
+      <div id="canvas-box">
+        <div id="tool-box">
+          <button onclick="clear_canvas()">清屏</button>
+        </div>
+        
+        <br>
+        <button onclick="upload_image()" style="font-weight: bold">立即上传到屏幕</button>-->
+        <br>
+      </div>
+      
+    </div>
+    <div class="btn" id="ctlbtn">
+      <button class="button" type="button" onclick="show_hide_btn(1);">LED控制</button>
+      <button class="button" type="button" onclick="show_hide_btn(0);">EPD设置</button>
+      <button class="button" type="button" onclick="show_hide_btn(2);">图传功能(开发中)</button>
+    </div>  
+    
+  </div>
+  
+  <!--<div class="logline">
+  <div class= "log" id="log"></div></div>-->
+  
+  <div class="btn">名称过滤<input  id="namefilter" value= 'ESL_'><br>
+  <button class="btn-3d cyan" id="connectbutton" type="button" onclick="preConnect(document.getElementById(&quot;namefilter&quot;).value);">连接</button>
+  <button class="btn-3d yellow" type="button" onclick="setTime();">对时</button>
+  </div>  
+
